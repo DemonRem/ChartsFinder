@@ -49,8 +49,8 @@ executabless = [
 ]
 
 buildOptions = dict(
-    includes = ["gi","requests",'idna'],
-    packages = ["gi","requests",'idna'],
+    includes = ["gi","requests",'idna','queue','os','configparser','ast'],
+    packages = ["gi","requests",'idna','queue','os','configparser','ast'],
     include_files = include_files
     )
 

@@ -27,9 +27,7 @@ gi.require_version("Gtk", "3.0")
 
 from gi.repository import Gtk
 
-import requests
-
-from multiprocessing import Queue
+import requests, os, configparser, ast
 
 # Import Glade File
 
@@ -45,95 +43,151 @@ class ChartFinder:
 
     def __init__(self):
 
-        # Set main objects
+        # Set default value
+
+        self.resources_list = ["http://vau.aero/navdb/chart/{0}.pdf","http://sa-ivao.net/charts_file/CHART-{0}.PDF",
+                          "ottomanva.com/lib/charts/{0}.pdf","https://yinlei.org/x-plane10/jep/{0}.pdf",
+                          "www.fly-sea.com/charts/{0}.pdf","www.uvairlines.com/admin/resources/charts/{0}.pdf"
+                          ]
+
+        # Import main objects
+
+        self.settings_win = builder.get_object("settings_win")
 
         self.icao_code = builder.get_object("icao_code")
 
-        self.aboutdialog = builder.get_object("aboutdialog1")
+        self.aboutdialog = builder.get_object("aboutdialog")
 
         self.status_label = builder.get_object("status_label")
 
-        self.main_win = builder.get_object("window1")
+        self.res_entry = builder.get_object("resources_entry")
 
-        self.main_win.show_all()
+        self.add_label = builder.get_object("add_label")
+
+        self.des_folder = builder.get_object("dest_folder")
+
+        self.main_win = builder.get_object("main_win")
+
+        # Set main objects
+
+        self.read_config()
 
     # Get Chart
 
     def get_chart(self,widget=None):
 
-        icao = self.icao_code.get_text()
+        self.icao = self.icao_code.get_text()
 
-        try:
+        x = 0
 
-            response = requests.get("http://vau.aero/navdb/chart/{0}.pdf".format(icao))
-
-            response.raise_for_status()
-
-            with open("{0}.pdf".format(icao), 'wb') as f:
-
-                f.write(response.content)
-
-            self.status_label.set_label("Chart Downloaded")
-
-        except:
+        while True:
 
             try:
 
-             response = requests.get("ottomanva.com/lib/charts/{0}.pdf".format(icao))
-
-             response.raise_for_status()
-
-             with open("{0}.pdf".format(icao), 'wb') as f:
-
-                f.write(response.content)
-
-             self.status_label.set_label("Chart Downloaded")
+                response = requests.get((self.resources_list[x].format(self.icao)))
 
             except:
 
+                self.status_label.set_label("Chart not found")
+
+            if response.status_code == requests.codes.ok:
+
+                with open("{0}.pdf".format(self.icao), 'wb') as f:
+
+                    f.write(response.content)
+
                 try:
 
-                    response = requests.get("https://yinlei.org/x-plane10/jep/{0}.pdf".format(icao))
+                    destf = self.dest
 
-                    response.raise_for_status()
-
-                    with open("{0}.pdf".format(icao), 'wb') as f:
-
-                        f.write(response.content)
-
-                    self.status_label.set_label("Chart Downloaded")
+                    destf = destf[8:]
 
                 except:
 
-                    try:
+                    destf = "folder"
 
-                        response = requests.get("www.fly-sea.com/charts/{0}.pdf".format(icao))
 
-                        response.raise_for_status()
+                if destf == 'folder':
 
-                        with open("{0}.pdf".format(icao), "wb") as f:
+                    self.status_label.set_label("Chart Downloaded")
 
-                            f.write(response.content)
+                    break
 
-                        self.status_label.set_label("Chart Downloaded")
+                else:
 
-                    except:
+                    os.rename("{0}.pdf".format(self.icao),destf + "/{0}.pdf".format(self.icao))
 
-                        try:
+                    self.status_label.set_label("Chart Downloaded")
 
-                            response = requests.get("www.uvairlines.com/admin/resources/charts/{0}.pdf".format(icao))
+                    break
 
-                            response.raise_for_status()
+            else:
 
-                            with open("{0}.pdf".format(icao), "wb") as f:
+                x = x + 1
 
-                                f.write(response.content)
+                if x > len(self.resources_list):
 
-                            self.status_label.set_label("Chart Downloaded")
+                    self.status_label.set_label("Chart not found")
 
-                        except:
+                    break
 
-                            self.status_label.set_label("Chart not found")
+                else:
+
+                    continue
+
+    # Add new resource
+
+    def add_resource(self,widget=None):
+
+        res = self.res_entry.get_text()
+
+        self.resources_list.append(res)
+
+        self.add_label.set_label("Resource Added")
+
+    # Read config
+
+    def read_config(self):
+
+        self.main_win.show_all()
+
+        config = configparser.RawConfigParser()
+
+        config.read("config.cfg")
+
+        config1 = config.read("config.cfg")
+
+        if config1 == []:
+
+            return None
+
+        else:
+
+            self.dest = config.get("Settings","Path")
+
+            self.resources_list = ast.literal_eval(config.get("Settings","ResourcesList"))
+
+    # Write Config
+
+    def write_config(self,widget=None):
+
+        config = configparser.RawConfigParser()
+
+        config.add_section('Settings')
+
+        config.set("Settings", "Path", self.des_folder.get_uri())
+
+        config.set("Settings", "ResourcesList", self.resources_list)
+
+        with open('config.cfg', 'wt') as configfile:
+
+            config.write(configfile)
+
+    # Open settings window
+
+    def show_settings(self,widget=None):
+
+        self.settings_win.show_all()
 
     # Set about dialog
 
@@ -143,12 +197,16 @@ class ChartFinder:
 
         self.aboutdialog.hide_on_delete()
 
+    def hide_settings(self,widget=None,data=None):
+        self.settings_win.hide_on_delete()
+        return True
+
     def quit(self,widget=None):
 
         Gtk.main_quit()
 		
 def main():
-	builder.connect_signals(ChartFinder())
-	Gtk.main()
+    builder.connect_signals(ChartFinder())
+    Gtk.main()
 
 main()
