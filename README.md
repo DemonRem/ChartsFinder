@@ -1,4 +1,4 @@
-# Chart Finder
+# Charts Finder
 A simple program to get charts for your flight, from virtual airlines websites.
 
 # How to use

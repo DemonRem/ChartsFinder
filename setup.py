@@ -43,7 +43,7 @@ if sys.platform == "win32":
     base = "Win32GUI"
 
 executabless = [
-    Executable("ChartFinder.py",
+    Executable("ChartsFinder.py",
                base=base
     )
 ]
@@ -55,9 +55,9 @@ buildOptions = dict(
     )
 
 setup(
-    name = "Chart Finder",
+    name = "Charts Finder",
     author = "Abdullah Radwan",
-    version = "0.2",
+    version = "1.0",
     description = "Get charts for your flight!",
     options = dict(build_exe = buildOptions),
     executables = executabless
