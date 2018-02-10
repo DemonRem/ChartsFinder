@@ -1,6 +1,12 @@
 # Charts Finder
 A simple program to get charts for your flight, from virtual airlines websites.
 
+# Install
+
+For windows users: Go to releases and download the last version of ChartsFinderWin.zip.
+
+For Linux and Mac users: Install Python 3, PyGObject 3 and Requests libraries, then set ChartsFinder.py as executable and run it. 
+
 # How to use
 
 Just enter the ICAO code for the airport, the program will search in its websites
