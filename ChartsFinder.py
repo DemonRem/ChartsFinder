@@ -3,7 +3,7 @@
 '''
 --------------------- Copyright Block ----------------------
 
-Charts Finder Program (ver 1.0)
+Charts Finder Program (Version 1.0.1)
 Copyright (C) 2018 Abdullah Radwan
 
 License: GNU GPL v3.0
@@ -18,8 +18,6 @@ This program is distributed in the hope that it will
 be useful, but WITHOUT ANY WARRANTY.
 
 PLEASE DO NOT REMOVE THIS COPYRIGHT BLOCK.'''
-
-# Import main libs
 
 import gi
 
@@ -37,7 +35,7 @@ builder.add_from_file("ChartsFinder.glade")
 
 # Main class
 
-class ChartFinder:
+class ChartsFinder:
 
     # Initialization
 
@@ -49,7 +47,7 @@ class ChartFinder:
 
         self.resources_list = ["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac,"http://vau.aero/navdb/chart/{0}.pdf","http://sa-ivao.net/charts_file/CHART-{0}.PDF",
                           "ottomanva.com/lib/charts/{0}.pdf","https://yinlei.org/x-plane10/jep/{0}.pdf",
-                          "www.fly-sea.com/charts/{0}.pdf","www.uvairlines.com/admin/resources/charts/{0}.pdf"
+                          "www.fly-sea.com/charts/{0}.pdf","www.uvairlines.com/admin/resources/charts/{0}.pdf","https://www.virtualairlines.eu/charts/{0}.pdf"
                           ]
 
         # Import main objects
@@ -66,7 +64,9 @@ class ChartFinder:
 
         self.des_folder = builder.get_object("dest_folder")
 
-        self.open_check = builder.get_object("checkbutton1")
+        self.open_check = builder.get_object("open_chart_check")
+
+        self.notify_check = builder.get_object("view_notify_check")
 
         self.res_liststore = builder.get_object("res_list")
 
@@ -92,101 +92,135 @@ class ChartFinder:
 
         # Get ICAO code
 
-        self.icao = self.icao_code.get_text().upper()
+        self.icao = self.icao_code.get_text().upper().split()
+
+        # x is resources number, z is airports number
 
         x = 0
 
-        while True:
+        z = 0
 
-            try:
+        # This loop will run the inner loop 1 per airport
 
-                # Check if chart exist in resource
+        while z < len(self.icao):
 
-                response = requests.get((self.resources_list[x].format(self.icao)))
+            GLib.idle_add(self.status_label.set_label,"Downloading %s Chart..." % self.icao[z])
 
-            except:
-
-                # If chart isn't exist
-
-                GLib.idle_add(self.status_label.set_label,"Chart not found")
-
-                break
-
-            # If chart exists on the server
-
-            if response.status_code == requests.codes.ok:
-
-                # Write the chart to pdf file
-
-                with open("{0}.pdf".format(self.icao), 'wb') as f:
-
-                    f.write(response.content)
+            while True:
 
                 try:
 
-                    # If a folder has been selected to save to it.
+                # Check if chart exist in resource
 
-                    destf = self.dest
-
-                    self.destf = destf[8:]
+                    response = requests.get((self.resources_list[x].format(self.icao[z])))
 
                 except:
 
-                    # If no folder has been selected
+                    # If chart isn't exist
 
-                    self.destf = "folder"
+                    GLib.idle_add(self.status_label.set_label,"%s Chart not found" % self.icao[z])
 
-                if self.destf == 'folder':
+                    # Run notify
 
-                    GLib.idle_add(self.status_label.set_label,"Chart Downloaded")
+                    if self.view_notify == True:
 
-                    # If user want to open chart
-
-                    if self.open_check.get_active() == True:
-
-                        os.startfile("{0}.pdf".format(self.icao))
+                        os.system("notify-send ChartsFinder %s Chart not found" % self.icao[z])
 
                     break
 
-                # If a folder has been selected
+                # If chart exists on the server
 
-                else:
+                if response.status_code == requests.codes.ok:
+
+                    # Write the chart to pdf file
+
+                    with open("{0}.pdf".format(self.icao[z]), 'wb') as f:
+
+                        f.write(response.content)
 
                     try:
 
-                        # Trying to move chart
+                        # If a folder has been selected to save to it.
 
-                        shutil.move("{0}.pdf".format(self.icao),self.destf)
+                        self.destf = self.dest[8:]
 
                     except:
 
-                        # The error will occur only if chart is already exists
+                        # If no folder has been selected
 
-                        GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+                        self.destf = "folder"
 
-                    GLib.idle_add(self.status_label.set_label,"Chart Downloaded")
+                    if self.destf == 'folder':
 
-                    if self.open_check.get_active() == True:
+                        shutil.move("{0}.pdf".format(self.icao[z]), "Charts/")
 
-                        os.startfile(self.destf + "/{0}.pdf".format(self.icao))
+                        GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
 
-                    break
+                        if self.view_notify == True:
 
-            # If chart isn't exist on server
+                            os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
 
-            else:
+                        # If user want to open chart
 
-                # Trying with another resource
+                        if self.open_chart == True:
 
-                x = x + 1
+                            os.startfile("%s/Charts/%s.pdf" % (os.getcwd(),self.icao[z]))
 
-                # If resources has over
+                        break
 
-                if x > len(self.resources_list):
+                    # If a folder has been selected
 
-                    GLib.idle_add(self.status_label.set_label,"Chart not found")
+                    else:
 
-                    break
+                        try:
+
+                            # Trying to move chart
+
+                            shutil.move("{0}.pdf".format(self.icao[z]),self.destf)
+
+                            GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+
+                            if self.view_notify == True:
+
+                                os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
+
+                            if self.open_chart == True:
+
+                                os.startfile(self.destf + "/{0}.pdf".format(self.icao[z]))
+
+                        except:
+
+                            # The error will occur only if chart is already exists
+
+                            GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+
+                            if self.view_notify == True:
+
+                                os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+
+                        break
+
+                # If chart isn't exist on server
+
+                else:
+
+                    # Trying with another resource
+
+                    x = x + 1
+
+                    # If resources has over
+
+                    if x > len(self.resources_list):
+
+                        GLib.idle_add(self.status_label.set_label,"%s Chart not found" % self.icao[z])
+
+                        if self.view_notify == True:
+
+                            os.system("notify-send ChartsFinder %s Chart not found" % self.icao[z])
+
+                        break
+
+            z = z + 1
 
     # Add resource to TreeView
 
@@ -214,11 +248,13 @@ class ChartFinder:
 
         GLib.threads_init()
 
-        self.status_label.set_label("Downloading...")
+        self.view_notify = self.notify_check.get_active()
+
+        self.open_chart = self.open_check.get_active()
 
         # Start Thread
 
-        _thread.start_new_thread(self.get_chart,())
+        _thread.start_new_thread(self.get_chart, ())
 
     # Add new resource
 
@@ -302,7 +338,19 @@ class ChartFinder:
 
             # Get config data
 
-            self.dest = config.get("Settings","Path")
+            # If self.dest = None
+
+            try:
+
+                self.dest = ast.literal_eval(config.get("Settings","Path"))
+
+            # else
+
+            except:
+
+                self.dest = config.get("Settings", "Path")
+
+            self.notify_check.set_active(ast.literal_eval(config.get("Settings","ViewNotify")))
 
             # If no resource list
 
@@ -356,7 +404,9 @@ class ChartFinder:
 
         config.set("Settings", "ResourcesList", self.resources_list)
 
-        config.set("Settings","OpenPDF",self.open_check.get_active())
+        config.set("Settings", "OpenPDF", self.open_check.get_active())
+
+        config.set("Settings", "ViewNotify", self.notify_check.get_active())
 
         with open('config.cfg', 'wt') as configfile:
 
@@ -390,7 +440,7 @@ class ChartFinder:
 
         self.settings_win.hide_on_delete()
 
-        # the windows can't shown again if no return True
+        # the windows can't shown again if there's no return True
 
         return True
 
@@ -401,11 +451,7 @@ class ChartFinder:
         self.write_config()
 
         Gtk.main_quit()
-		
-def main():
 
-    builder.connect_signals(ChartFinder())
+builder.connect_signals(ChartsFinder())
 
-    Gtk.main()
-
-main()
+Gtk.main()

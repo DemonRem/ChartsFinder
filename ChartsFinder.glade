@@ -4,10 +4,10 @@
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkAboutDialog" id="aboutdialog">
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">About Chart Finder</property>
+    <property name="title" translatable="yes">About Charts Finder</property>
     <property name="type_hint">dialog</property>
     <property name="program_name">Charts Finder</property>
-    <property name="version">1.0</property>
+    <property name="version">1.0.1</property>
     <property name="copyright" translatable="yes">Copyright (C) Abdullah Radwan</property>
     <property name="comments" translatable="yes">Get charts for your flight!</property>
     <property name="authors">Abdullah Radwan</property>
@@ -38,7 +38,7 @@
   </object>
   <object class="GtkDialog" id="add_res_win">
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Add Resource - Chart Finder</property>
+    <property name="title" translatable="yes">Add Resource - Charts Finder</property>
     <property name="type_hint">dialog</property>
     <property name="gravity">center</property>
     <child internal-child="vbox">
@@ -173,7 +173,7 @@
   </object>
   <object class="GtkWindow" id="main_win">
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Chart Finder</property>
+    <property name="title" translatable="yes">Charts Finder</property>
     <signal name="destroy-event" handler="quit" swapped="no"/>
     <child>
       <object class="GtkBox" id="box1">
@@ -275,7 +275,7 @@
           <object class="GtkLabel" id="label2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Chart Finder</property>
+            <property name="label" translatable="yes">Charts Finder</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -303,6 +303,7 @@
               <object class="GtkEntry" id="icao_code">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="placeholder_text" translatable="yes">Seperate with space</property>
                 <signal name="activate" handler="get_charts" swapped="no"/>
               </object>
               <packing>
@@ -357,7 +358,7 @@
   </object>
   <object class="GtkWindow" id="settings_win">
     <property name="can_focus">False</property>
-    <property name="title" translatable="yes">Settings - Chart Finder</property>
+    <property name="title" translatable="yes">Settings - Charts Finder</property>
     <signal name="delete-event" handler="hide_settings" swapped="no"/>
     <signal name="destroy-event" handler="hide_settings" swapped="no"/>
     <child>
@@ -378,7 +379,7 @@
                   <object class="GtkLabel" id="label5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Save Charts to:</property>
+                    <property name="label" translatable="yes">Save charts to:</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -406,7 +407,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkCheckButton" id="checkbutton1">
+              <object class="GtkCheckButton" id="open_chart_check">
                 <property name="label" translatable="yes">Open chart after download</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -419,6 +420,22 @@
                 <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="view_notify_check">
+                <property name="label" translatable="yes">Show notifications</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="xalign">0</property>
+                <property name="active">True</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </object>
