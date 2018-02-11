@@ -5,6 +5,7 @@
   <object class="GtkAboutDialog" id="aboutdialog">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">About Charts Finder</property>
+    <property name="icon_name">accessories-dictionary</property>
     <property name="type_hint">dialog</property>
     <property name="program_name">Charts Finder</property>
     <property name="version">1.0.1</property>
@@ -39,6 +40,7 @@
   <object class="GtkDialog" id="add_res_win">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Add Resource - Charts Finder</property>
+    <property name="icon_name">accessories-dictionary</property>
     <property name="type_hint">dialog</property>
     <property name="gravity">center</property>
     <child internal-child="vbox">
@@ -174,6 +176,7 @@
   <object class="GtkWindow" id="main_win">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Charts Finder</property>
+    <property name="icon_name">accessories-dictionary</property>
     <signal name="destroy-event" handler="quit" swapped="no"/>
     <child>
       <object class="GtkBox" id="box1">
@@ -359,6 +362,7 @@
   <object class="GtkWindow" id="settings_win">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">Settings - Charts Finder</property>
+    <property name="icon_name">accessories-dictionary</property>
     <signal name="delete-event" handler="hide_settings" swapped="no"/>
     <signal name="destroy-event" handler="hide_settings" swapped="no"/>
     <child>
