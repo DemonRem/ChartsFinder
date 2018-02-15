@@ -49,15 +49,15 @@ executabless = [
 ]
 
 buildOptions = dict(
-    includes = ["gi","requests",'idna','queue','os','configparser','ast','_thread','shutil','time'],
-    packages = ["gi","requests",'idna','queue','os','configparser','ast','_thread','shutil','time'],
+    includes = ["gi","requests",'idna','queue','os','configparser','ast','_thread','shutil','time','bs4'],
+    packages = ["gi","requests",'idna','queue','os','configparser','ast','_thread','shutil','time','bs4'],
     include_files = include_files
     )
 
 setup(
     name = "Charts Finder",
     author = "Abdullah Radwan",
-    version = "1.0.1",
+    version = "1.0.2",
     description = "Get charts for your flight!",
     options = dict(build_exe = buildOptions),
     executables = executabless
