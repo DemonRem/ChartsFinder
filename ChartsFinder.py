@@ -3,7 +3,7 @@
 '''
 --------------------- Copyright Block ----------------------
 
-Charts Finder Program (Version 1.0.2)
+Charts Finder Program (Version 1.0.3)
 Copyright (C) 2018 Abdullah Radwan
 
 License: GNU GPL v3.0
@@ -47,13 +47,13 @@ class ChartsFinder:
 
         self.airac = time.strftime("%y%m", time.gmtime())
 
-        self.resources_list = ["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf",
-                               "http://vau.aero/navdb/chart/{0}.pdf","http://sa-ivao.net/charts_file/CHART-{0}.PDF","http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac,
-                               "ottomanva.com/lib/charts/{0}.pdf","https://yinlei.org/x-plane10/jep/{0}.pdf",
-                               "www.fly-sea.com/charts/{0}.pdf","www.uvairlines.com/admin/resources/charts/{0}.pdf","https://www.virtualairlines.eu/charts/{0}.pdf"
+        self.resources_list = [["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf","Normal"],
+                               ["http://vau.aero/navdb/chart/{0}.pdf","Normal"],["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/","Folder"],["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac,"Normal"],
+                               ["ottomanva.com/lib/charts/{0}.pdf","Normal"],["https://yinlei.org/x-plane10/jep/{0}.pdf","Normal"],["http://sa-ivao.net/charts_file/CHART-{0}.PDF","Normal"],
+                               ["www.fly-sea.com/charts/{0}.pdf","Normal"],["www.uvairlines.com/admin/resources/charts/{0}.pdf","Normal"],["https://www.virtualairlines.eu/charts/{0}.pdf","Normal"]
                               ]
 
-        self.folder_res_list = ["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/"]
+        self.dest = None
 
         # Import main objects
 
@@ -77,8 +77,6 @@ class ChartsFinder:
 
         self.res_treeview = builder.get_object("treeview1")
 
-        self.folder_treeview = builder.get_object("treeview2")
-
         self.res_win = builder.get_object("add_res_win")
 
         self.res_entry = builder.get_object("res_entry")
@@ -86,8 +84,6 @@ class ChartsFinder:
         self.order_entry = builder.get_object("order_entry")
 
         self.res_combo = builder.get_object("res_combo")
-
-        self.folder_res_liststore = builder.get_object("folder_res_list")
 
         self.res_stat_label = builder.get_object("add_res_stat_label")
 
@@ -121,47 +117,33 @@ class ChartsFinder:
 
                 try:
 
-                # Check if chart exist in resource
+                    # Check if chart exist in resource
 
-                    try:
-
-                        response = requests.get((self.folder_res_list[x].format(self.icao[z])))
-
-                        self.url = self.folder_res_list[x]
-
-                        self.used = "folder"
-
-                    except IndexError:
-
-                        raise Exception()
+                    response = requests.get((self.resources_list[x][0].format(self.icao[z])))
 
                 except:
 
-                    try:
+                    # If chart isn't exist
 
-                        response = requests.get((self.resources_list[x].format(self.icao[z])))
+                    GLib.idle_add(self.status_label.set_label,"%s Charts not found" % self.icao[z])
 
-                        self.used = "normal"
+                    # Run notify
 
-                    except:
+                    if self.view_notify is True:
 
-                        # If chart isn't exist
+                        os.system("notify-send ChartsFinder %s Charts not found" % self.icao[z])
 
-                        GLib.idle_add(self.status_label.set_label,"%s Chart not found" % self.icao[z])
-
-                        # Run notify
-
-                        if self.view_notify == True:
-
-                            os.system("notify-send ChartsFinder %s Chart not found" % self.icao[z])
-
-                        break
+                    break
 
                 # If chart exists on the server
 
                 if response.status_code == requests.codes.ok:
 
-                    if self.used == "folder":
+                    # If resource is folder
+
+                    if self.resources_list[x][1] == "Folder":
+
+                        # Make Chart dict
 
                         try:
 
@@ -173,13 +155,23 @@ class ChartsFinder:
 
                         sopa = BeautifulSoup(response.content, "html.parser")
 
+                        # Download multiple charts
+
                         try:
+
+                            # Set URL
+
+                            self.url = self.resources_list[x][0].format(self.icao[z])
 
                             for link in sopa.find_all('a'):
 
                                 current_link = link.get('href')
 
+                                # Search for pdf files
+
                                 if current_link.endswith('pdf'):
+
+                                    # Download it
 
                                     with open(current_link, 'wb') as f:
 
@@ -196,17 +188,21 @@ class ChartsFinder:
 
                                 os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
 
+                        # If move fail
+
                         except:
 
                             GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
 
-                            if self.view_notify == True:
+                            if self.view_notify is True:
 
                                 os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
 
                         break
 
-                    elif self.used == "normal":
+                    # If resource is normal
+
+                    elif self.resources_list[x][1] == "Normal":
 
                         # Write the chart to pdf file
 
@@ -218,7 +214,7 @@ class ChartsFinder:
 
                         try:
 
-                            # If a folder has been selected to save to it.
+                            # If a folder was selected to save to it.
 
                             self.destf = self.dest[8:]
 
@@ -228,6 +224,8 @@ class ChartsFinder:
 
                             self.destf = "folder"
 
+                        # if no folder was selected, it will move to 'Charts' folder
+
                         if self.destf == 'folder':
 
                             try:
@@ -236,13 +234,13 @@ class ChartsFinder:
 
                                 GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
 
-                                if self.view_notify == True:
+                                if self.view_notify is True:
 
                                     os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
 
                                 # If user want to open chart
 
-                                if self.open_chart == True:
+                                if self.open_chart is True:
 
                                     os.startfile("%s\\Charts\\%s.pdf" % (os.getcwd(),self.icao[z]))
 
@@ -250,7 +248,7 @@ class ChartsFinder:
 
                                 GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
 
-                                if self.view_notify == True:
+                                if self.view_notify is True:
 
                                     os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
 
@@ -268,11 +266,11 @@ class ChartsFinder:
 
                                 GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
 
-                                if self.view_notify == True:
+                                if self.view_notify is True:
 
                                     os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
 
-                                if self.open_chart == True:
+                                if self.open_chart is True:
 
                                     os.startfile(self.destf + "/{0}.pdf".format(self.icao[z]))
 
@@ -282,7 +280,7 @@ class ChartsFinder:
 
                                 GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
 
-                                if self.view_notify == True:
+                                if self.view_notify is True:
 
                                     os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
 
@@ -316,25 +314,15 @@ class ChartsFinder:
 
         # Clear liststore
 
-        self.folder_res_liststore.clear()
-
         self.res_liststore.clear()
 
         # Start adding resources
 
         x = 0
 
-        while x < len(self.folder_res_list):
-
-            self.folder_res_liststore.append([x, self.folder_res_list[x]])
-
-            x = x + 1
-
-        x = 0
-
         while x < len(self.resources_list):
 
-            self.res_liststore.append([x, self.resources_list[x]])
+            self.res_liststore.append([x, self.resources_list[x][0]])
 
             x = x + 1
 
@@ -382,25 +370,25 @@ class ChartsFinder:
 
             # Add resource to resources list
 
-            if self.res_combo.get_active_text() == "Folder Resources's List":
+            if self.res_combo.get_active_text() == "Folder":
 
-                self.folder_res_list.insert(order,res)
-
-                self.add_res_view()
-
-                self.stat_label.set_label("A resource has been added to Folder Resources's List")
-
-            elif self.res_combo.get_active_text() == "Resources's List":
-
-                self.resources_list.insert(order,res)
+                self.resources_list.insert(order,[res,"Folder"])
 
                 self.add_res_view()
 
-                self.stat_label.set_label("A resource has been added to Resources's List")
+                self.stat_label.set_label("A folder resource was added")
+
+            elif self.res_combo.get_active_text() == "Normal":
+
+                self.resources_list.insert(order,[res,"Normal"])
+
+                self.add_res_view()
+
+                self.stat_label.set_label("A normal resource was added")
 
             else:
 
-                self.res_stat_label.set_label("Please choose a list")
+                self.res_stat_label.set_label("Please choose a type")
 
             self.res_win.hide()
 
@@ -412,13 +400,9 @@ class ChartsFinder:
 
         res_select = self.res_treeview.get_selection()
 
-        folder_select = self.folder_treeview.get_selection()
-
         # Get selected value from selection class
 
         model, treeiter = res_select.get_selected()
-
-        model1, treeiter1 = folder_select.get_selected()
 
         if treeiter is not None:
 
@@ -426,17 +410,7 @@ class ChartsFinder:
 
             self.add_res_view()
 
-            self.stat_label.set_label("An item has been removed from resources's list")
-
-            print("Resource removed")
-
-        elif treeiter1 is not None:
-
-            self.folder_res_list.pop(model1[treeiter1][0])
-
-            self.add_res_view()
-
-            self.stat_label.set_label("An item has been removed from resources's list")
+            self.stat_label.set_label("A resource was removed")
 
             print("Resource removed")
 
@@ -446,13 +420,11 @@ class ChartsFinder:
 
     def rest_res(self, widget=None):
 
-        self.resources_list = ["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf",
-                               "http://vau.aero/navdb/chart/{0}.pdf","http://sa-ivao.net/charts_file/CHART-{0}.PDF","http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac,
-                               "ottomanva.com/lib/charts/{0}.pdf","https://yinlei.org/x-plane10/jep/{0}.pdf",
-                               "www.fly-sea.com/charts/{0}.pdf","www.uvairlines.com/admin/resources/charts/{0}.pdf","https://www.virtualairlines.eu/charts/{0}.pdf"
+        self.resources_list = [["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf","Normal"],
+                               ["http://vau.aero/navdb/chart/{0}.pdf","Normal"],["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/","Folder"],["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac,"Normal"],
+                               ["ottomanva.com/lib/charts/{0}.pdf","Normal"],["https://yinlei.org/x-plane10/jep/{0}.pdf","Normal"],["http://sa-ivao.net/charts_file/CHART-{0}.PDF","Normal"],
+                               ["www.fly-sea.com/charts/{0}.pdf","Normal"],["www.uvairlines.com/admin/resources/charts/{0}.pdf","Normal"],["https://www.virtualairlines.eu/charts/{0}.pdf","Normal"]
                               ]
-
-        self.folder_res_list = ["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/"]
 
         self.add_res_view()
 
@@ -498,24 +470,37 @@ class ChartsFinder:
 
             try:
 
-                # Update Airac to fltplan server URL
+                # Get where is it
 
-                a = self.resources_list.index("http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac)
+                g = 0
+
+                while g < len(self.resources_list):
+
+                    try:
+
+                        a = self.resources_list[g].index("http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac)
+
+                        b = g
+
+                        break
+
+                    except:
+
+                        g += 1
+
+                # Update Airac to fltplan server URL
 
                 # Remove the old one
 
-                self.resources_list.pop(a)
+                self.resources_list.pop[b](0)
 
                 # Add new Airac
 
-                self.resources_list.insert(a,"http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac)
+                self.resources_list[b].insert(a,"http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac)
 
             except:
 
                 pass
-
-
-            self.resources_folder_list = ast.literal_eval(config.get("Settings", "ResourcesFolderList"))
 
             self.add_res_view()
 
@@ -533,11 +518,9 @@ class ChartsFinder:
 
         config.add_section('Settings')
 
-        config.set("Settings", "Path", self.des_folder.get_uri())
+        config.set("Settings", "Path", self.dest)
 
         config.set("Settings", "ResourcesList", self.resources_list)
-
-        config.set("Settings", "ResourcesFolderList", self.folder_res_list)
 
         config.set("Settings", "OpenPDF", self.open_check.get_active())
 
@@ -548,6 +531,16 @@ class ChartsFinder:
             config.write(configfile)
 
         print("Config Written")
+
+    # Set path, will activated when open choose file dialog
+
+    def set_path(self, widget=None):
+
+        # If something is selected
+
+        if self.des_folder.get_uri() != None:
+
+            self.dest = self.des_folder.get_uri()
 
     # Open settings window
 
