@@ -3,7 +3,7 @@
 '''
 --------------------- Copyright Block ----------------------
 
-Charts Finder Program (Version 1.0.3)
+Charts Finder Program (Version 1.0.4)
 Copyright (C) 2018 Abdullah Radwan
 
 License: GNU GPL v3.0
@@ -101,210 +101,232 @@ class ChartsFinder:
 
         self.icao = self.icao_code.get_text().upper().split()
 
-        # x is resources number, z is airports number
+        if self.icao == []:
 
-        x = 0
+            GLib.idle_add(self.status_label.set_label, "Please enter an icao code")
 
-        z = 0
+        else:
 
-        # This loop will run the inner loop 1 per airport
+            # x is resources number, z is airports number
 
-        while z < len(self.icao):
+            x = 0
 
-            GLib.idle_add(self.status_label.set_label,"Downloading %s Charts..." % self.icao[z])
+            z = 0
 
-            while True:
+            # This loop will run the inner loop 1 per airport
 
-                try:
+            while z < len(self.icao):
 
-                    # Check if chart exist in resource
+                GLib.idle_add(self.status_label.set_label,"Downloading %s Charts..." % self.icao[z])
 
-                    response = requests.get((self.resources_list[x][0].format(self.icao[z])))
+                while True:
 
-                except:
+                    try:
 
-                    # If chart isn't exist
+                        # Check if chart exist in resource
 
-                    GLib.idle_add(self.status_label.set_label,"%s Charts not found" % self.icao[z])
+                        response = requests.get((self.resources_list[x][0].format(self.icao[z])))
 
-                    # Run notify
+                    except:
 
-                    if self.view_notify is True:
+                        # If chart isn't exist
 
-                        os.system("notify-send ChartsFinder %s Charts not found" % self.icao[z])
+                        GLib.idle_add(self.status_label.set_label,"%s Charts not found" % self.icao[z])
 
-                    break
+                        # Run notify
 
-                # If chart exists on the server
+                        if self.view_notify is True:
 
-                if response.status_code == requests.codes.ok:
+                            os.system("notify-send ChartsFinder %s Charts not found" % self.icao[z])
 
-                    # If resource is folder
+                        break
 
-                    if self.resources_list[x][1] == "Folder":
+                    # If chart exists on the server
 
-                        # Make Chart dict
+                    if response.status_code == requests.codes.ok:
 
-                        try:
+                        # If resource is folder
 
-                            os.mkdir(os.getcwd() + "\\Charts\\" + self.icao[z])
+                        if self.resources_list[x][1] == "Folder":
 
-                        except:
+                            # Make Chart dict
 
-                            pass
+                            try:
 
-                        sopa = BeautifulSoup(response.content, "html.parser")
+                                # If a folder was selected to save to it.
 
-                        # Download multiple charts
+                                self.destf = self.dest[8:]
 
-                        try:
+                            except:
 
-                            # Set URL
+                                # If no folder has been selected
 
-                            self.url = self.resources_list[x][0].format(self.icao[z])
+                                self.destf = "folder"
 
-                            for link in sopa.find_all('a'):
+                            if self.destf == "folder":
 
-                                current_link = link.get('href')
+                                path = os.getcwd() + "\\Charts\\" + self.icao[z]
 
-                                # Search for pdf files
+                                os.mkdir(path)
 
-                                if current_link.endswith('pdf'):
+                            else:
 
-                                    # Download it
+                                path = self.destf + "/" + self.icao[z]
 
-                                    with open(current_link, 'wb') as f:
+                                os.mkdir(path)
 
-                                        f.write(requests.get(self.url.format(self.icao[z]) + current_link).content)
+                            sopa = BeautifulSoup(response.content, "html.parser")
 
-                                        f.close()
+                            # Download multiple charts
 
-                                        shutil.move(current_link,os.getcwd() + "\\Charts\\" + self.icao[z])
+                            try:
+
+                                # Set URL
+
+                                self.url = self.resources_list[x][0].format(self.icao[z])
+
+                                for link in sopa.find_all('a'):
+
+                                    current_link = link.get('href')
+
+                                    # Search for pdf files
+
+                                    if current_link.endswith('pdf'):
+
+                                        # Download it
+
+                                        with open(current_link, 'wb') as f:
+
+                                            f.write(requests.get(self.url.format(self.icao[z]) + current_link).content)
+
+                                            f.close()
+
+                                            shutil.move(current_link, path)
 
 
-                            GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+                                GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+
+                                if self.view_notify == True:
+
+                                    os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
+
+                            # If move fail
+
+                            except:
+
+                                GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+
+                                if self.view_notify is True:
+
+                                    os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+
+                            break
+
+                        # If resource is normal
+
+                        elif self.resources_list[x][1] == "Normal":
+
+                            # Write the chart to pdf file
+
+                            with open("{0}.pdf".format(self.icao[z]), 'wb') as f:
+
+                                f.write(response.content)
+
+                                f.close()
+
+                            try:
+
+                                # If a folder was selected to save to it.
+
+                                self.destf = self.dest[8:]
+
+                            except:
+
+                                # If no folder has been selected
+
+                                self.destf = "folder"
+
+                            # if no folder was selected, it will move to 'Charts' folder
+
+                            if self.destf == 'folder':
+
+                                try:
+
+                                    shutil.move("{0}.pdf".format(self.icao[z]), "Charts/")
+
+                                    GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+
+                                    if self.view_notify is True:
+
+                                        os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
+
+                                    # If user want to open chart
+
+                                    if self.open_chart is True:
+
+                                        os.startfile("%s\\Charts\\%s.pdf" % (os.getcwd(),self.icao[z]))
+
+                                except:
+
+                                    GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+
+                                    if self.view_notify is True:
+
+                                        os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+
+                                break
+
+                            # If a folder has been selected
+
+                            else:
+
+                                try:
+
+                                    # Trying to move chart
+
+                                    shutil.move("{0}.pdf".format(self.icao[z]),self.destf)
+
+                                    GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+
+                                    if self.view_notify is True:
+
+                                        os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
+
+                                    if self.open_chart is True:
+
+                                        os.startfile(self.destf + "/{0}.pdf".format(self.icao[z]))
+
+                                except:
+
+                                    # The error will occur only if chart is already exists
+
+                                    GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+
+                                    if self.view_notify is True:
+
+                                        os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+
+                                break
+
+                    # If chart isn't exist on server
+
+                    else:
+
+                        # Trying with another resource
+
+                        x = x + 1
+
+                        # If resources has over
+
+                        if x > len(self.resources_list):
+
+                            GLib.idle_add(self.status_label.set_label,"%s Chart not found" % self.icao[z])
 
                             if self.view_notify == True:
 
-                                os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
-
-                        # If move fail
-
-                        except:
-
-                            GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
-
-                            if self.view_notify is True:
-
-                                os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
-
-                        break
-
-                    # If resource is normal
-
-                    elif self.resources_list[x][1] == "Normal":
-
-                        # Write the chart to pdf file
-
-                        with open("{0}.pdf".format(self.icao[z]), 'wb') as f:
-
-                            f.write(response.content)
-
-                            f.close()
-
-                        try:
-
-                            # If a folder was selected to save to it.
-
-                            self.destf = self.dest[8:]
-
-                        except:
-
-                            # If no folder has been selected
-
-                            self.destf = "folder"
-
-                        # if no folder was selected, it will move to 'Charts' folder
-
-                        if self.destf == 'folder':
-
-                            try:
-
-                                shutil.move("{0}.pdf".format(self.icao[z]), "Charts/")
-
-                                GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
-
-                                if self.view_notify is True:
-
-                                    os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
-
-                                # If user want to open chart
-
-                                if self.open_chart is True:
-
-                                    os.startfile("%s\\Charts\\%s.pdf" % (os.getcwd(),self.icao[z]))
-
-                            except:
-
-                                GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
-
-                                if self.view_notify is True:
-
-                                    os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+                                os.system("notify-send ChartsFinder %s Chart not found" % self.icao[z])
 
                             break
-
-                        # If a folder has been selected
-
-                        else:
-
-                            try:
-
-                                # Trying to move chart
-
-                                shutil.move("{0}.pdf".format(self.icao[z]),self.destf)
-
-                                GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
-
-                                if self.view_notify is True:
-
-                                    os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
-
-                                if self.open_chart is True:
-
-                                    os.startfile(self.destf + "/{0}.pdf".format(self.icao[z]))
-
-                            except:
-
-                                # The error will occur only if chart is already exists
-
-                                GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
-
-                                if self.view_notify is True:
-
-                                    os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
-
-                            break
-
-                # If chart isn't exist on server
-
-                else:
-
-                    # Trying with another resource
-
-                    x = x + 1
-
-                    # If resources has over
-
-                    if x > len(self.resources_list):
-
-                        GLib.idle_add(self.status_label.set_label,"%s Chart not found" % self.icao[z])
-
-                        if self.view_notify == True:
-
-                            os.system("notify-send ChartsFinder %s Chart not found" % self.icao[z])
-
-                        break
 
             z = z + 1
 
@@ -429,6 +451,103 @@ class ChartsFinder:
         self.add_res_view()
 
         self.stat_label.set_label("Resources Rested")
+
+    # Move a res up
+
+    def move_res_up(self,widget=None):
+
+        # Get selection class
+
+        res_select = self.res_treeview.get_selection()
+
+        # Get selected value from selection class
+
+        model, treeiter = res_select.get_selected()
+
+        if treeiter is not None:
+
+            # Get order
+
+            order = model[treeiter][0]
+
+            # Get specific res list in resource list
+
+            res = self.resources_list[order]
+
+            # If order is the first (0)
+
+            if order is 0:
+
+                self.stat_label.set_label("You can't up the first item")
+
+            else:
+
+                # Remove the resource
+
+                self.resources_list.pop(order)
+
+                # Insert new one with higher order
+
+                self.resources_list.insert(order - 1,res)
+
+                # Update view
+
+                self.add_res_view()
+
+                self.stat_label.set_label("A resource was moved up")
+
+
+        else:
+
+            self.stat_label.set_label("Please select a resource")
+
+    def move_res_down(self, widget=None):
+
+        # Get selection class
+
+        res_select = self.res_treeview.get_selection()
+
+        # Get selected value from selection class
+
+        model, treeiter = res_select.get_selected()
+
+        if treeiter is not None:
+
+            # Get order
+
+            order = model[treeiter][0]
+
+            # Get specific res list in resource list
+
+            res = self.resources_list[order]
+
+            # If order is the last
+
+            if order + 1 == len(self.resources_list):
+
+                self.stat_label.set_label("You can't down the last item")
+
+            else:
+
+                # Remove the resource
+
+                self.resources_list.pop(order)
+
+                # Insert new one with lower order
+
+                self.resources_list.insert(order + 1, res)
+
+                # Update view
+
+                self.add_res_view()
+
+                self.stat_label.set_label("A resource was moved down")
+
+
+        else:
+
+            self.stat_label.set_label("Please select a resource")
+
 
     # Read config
 

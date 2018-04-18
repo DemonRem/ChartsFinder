@@ -8,7 +8,7 @@
     <property name="icon_name">accessories-dictionary</property>
     <property name="type_hint">dialog</property>
     <property name="program_name">Charts Finder</property>
-    <property name="version">1.0.3</property>
+    <property name="version">1.0.4</property>
     <property name="copyright" translatable="yes">Copyright (C) Abdullah Radwan</property>
     <property name="comments" translatable="yes">Get charts for your flight!</property>
     <property name="authors">Abdullah Radwan</property>
@@ -501,7 +501,7 @@
             <property name="orientation">vertical</property>
             <property name="spacing">10</property>
             <child>
-              <object class="GtkLabel" id="label9">
+              <object class="GtkLabel" id="res_list_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Resources's List</property>
@@ -509,7 +509,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">0</property>
               </packing>
             </child>
             <child>
@@ -547,7 +547,51 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">3</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox" id="box11">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="homogeneous">True</property>
+                <child>
+                  <object class="GtkButton" id="up_res_button">
+                    <property name="label">gtk-go-up</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_stock">True</property>
+                    <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="move_res_up" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="down_res_button">
+                    <property name="label">gtk-go-down</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_stock">True</property>
+                    <property name="always_show_image">True</property>
+                    <signal name="clicked" handler="move_res_down" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -591,11 +635,11 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">4</property>
+                <property name="position">3</property>
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="button2">
+              <object class="GtkButton" id="reset_res_button">
                 <property name="label" translatable="yes">Rest</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -625,10 +669,10 @@
           </packing>
         </child>
         <child type="tab">
-          <object class="GtkLabel" id="label4">
+          <object class="GtkLabel" id="res_note_label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">Resoruces</property>
+            <property name="label" translatable="yes">Resources</property>
           </object>
           <packing>
             <property name="position">1</property>
