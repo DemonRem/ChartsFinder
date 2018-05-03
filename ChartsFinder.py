@@ -1,22 +1,18 @@
+
 # -*- coding: utf-8 -*-
 
 '''
 --------------------- Copyright Block ----------------------
-
-Charts Finder Program (Version 1.0.4)
+Charts Finder Program (Version 1.0.5)
 Copyright (C) 2018 Abdullah Radwan
-
 License: GNU GPL v3.0
-
 TERMS OF USE:
 	Permission is granted to use this code, with or
 	without modification, in any website or application
 	provided that credit is given to the original work
 	with a link back to Abdullah Radwan.
-
 This program is distributed in the hope that it will
 be useful, but WITHOUT ANY WARRANTY.
-
 PLEASE DO NOT REMOVE THIS COPYRIGHT BLOCK.'''
 
 import gi
@@ -27,7 +23,9 @@ from gi.repository import Gtk, GObject, GLib
 
 from bs4 import BeautifulSoup
 
-import requests, os, configparser, ast, _thread, shutil, time
+from threading import Thread
+
+import requests, os, configparser, ast, shutil, time
 
 # Import Glade File
 
@@ -47,10 +45,10 @@ class ChartsFinder:
 
         self.airac = time.strftime("%y%m", time.gmtime())
 
-        self.resources_list = [["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf","Normal"],
-                               ["http://vau.aero/navdb/chart/{0}.pdf","Normal"],["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/","Folder"],["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac,"Normal"],
-                               ["ottomanva.com/lib/charts/{0}.pdf","Normal"],["https://yinlei.org/x-plane10/jep/{0}.pdf","Normal"],["http://sa-ivao.net/charts_file/CHART-{0}.PDF","Normal"],
-                               ["www.fly-sea.com/charts/{0}.pdf","Normal"],["www.uvairlines.com/admin/resources/charts/{0}.pdf","Normal"],["https://www.virtualairlines.eu/charts/{0}.pdf","Normal"]
+        self.resources_list = [["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf","Normal"],["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/","Folder"],
+                               ["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac, "Normal"],["http://vau.aero/navdb/chart/{0}.pdf","Normal"],
+                               ["http://ottomanva.com/lib/charts/{0}.pdf","Normal"],["https://yinlei.org/x-plane10/jep/{0}.pdf","Normal"],["http://sa-ivao.net/charts_file/CHART-{0}.PDF","Normal"],
+                               ["http://www.fly-sea.com/charts/{0}.pdf","Normal"],["http://uvairlines.com/admin/resources/charts/{0}.pdf","Normal"],["https://www.virtualairlines.eu/charts/{0}.pdf","Normal"]
                               ]
 
         self.dest = None
@@ -103,7 +101,7 @@ class ChartsFinder:
 
         if self.icao == []:
 
-            GLib.idle_add(self.status_label.set_label, "Please enter an icao code")
+            GLib.idle_add(self.status_label.set_label, "Please enter an ICAO code")
 
         else:
 
@@ -121,6 +119,62 @@ class ChartsFinder:
 
                 while True:
 
+                    if self.destf == "folder":
+
+                        path = os.getcwd() + "\\Charts\\" + self.icao[z]
+
+                        if os.path.exists(path):
+
+                            GLib.idle_add(self.status_label.set_label, "%s charts already exists" % self.icao[z])
+
+                            if self.view_notify is True:
+
+                                Thread(target=os.system, args=("notify-send ChartsFinder %s charts already exists" % self.icao[z],)).start()
+
+                            break
+
+                        else:
+
+                            path = os.getcwd() + "\\Charts\\" + self.icao[z] + ".pdf"
+
+                            if os.path.exists(path):
+
+                                GLib.idle_add(self.status_label.set_label, "%s charts already exists" % self.icao[z])
+
+                                if self.view_notify is True:
+
+                                    Thread(target=os.system, args=("notify-send ChartsFinder %s charts already exists" % self.icao[z],)).start()
+
+                                break
+
+                    else:
+
+                        path = self.destf + "/" + self.icao[z]
+
+                        if os.path.exists(path):
+
+                            GLib.idle_add(self.status_label.set_label, "%s charts already exists" % self.icao[z])
+
+                            if self.view_notify is True:
+
+                                Thread(target=os.system, args=("notify-send ChartsFinder %s charts already exists" % self.icao[z],)).start()
+
+                            break
+
+                        else:
+
+                            path = self.destf + "/" + self.icao[z] + ".pdf"
+
+                            if os.path.exists(path):
+
+                                GLib.idle_add(self.status_label.set_label, "%s charts already exists" % self.icao[z])
+
+                                if self.view_notify is True:
+
+                                    Thread(target=os.system, args=("notify-send ChartsFinder %s charts already exists" % self.icao[z],)).start()
+
+                                break
+
                     try:
 
                         # Check if chart exist in resource
@@ -131,13 +185,13 @@ class ChartsFinder:
 
                         # If chart isn't exist
 
-                        GLib.idle_add(self.status_label.set_label,"%s Charts not found" % self.icao[z])
+                        GLib.idle_add(self.status_label.set_label,"%s charts not found" % self.icao[z])
 
                         # Run notify
 
                         if self.view_notify is True:
 
-                            os.system("notify-send ChartsFinder %s Charts not found" % self.icao[z])
+                            Thread(target=os.system, args=("notify-send ChartsFinder %s charts not found" % self.icao[z],)).start()
 
                         break
 
@@ -148,20 +202,6 @@ class ChartsFinder:
                         # If resource is folder
 
                         if self.resources_list[x][1] == "Folder":
-
-                            # Make Chart dict
-
-                            try:
-
-                                # If a folder was selected to save to it.
-
-                                self.destf = self.dest[8:]
-
-                            except:
-
-                                # If no folder has been selected
-
-                                self.destf = "folder"
 
                             if self.destf == "folder":
 
@@ -204,21 +244,21 @@ class ChartsFinder:
                                             shutil.move(current_link, path)
 
 
-                                GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+                                GLib.idle_add(self.status_label.set_label, "%s Charts Downloaded" % self.icao[z])
 
                                 if self.view_notify == True:
 
-                                    os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
+                                    Thread(target=os.system,args=("notify-send ChartsFinder %s charts downloaded" % self.icao[z],)).start()
 
                             # If move fail
 
                             except:
 
-                                GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+                                GLib.idle_add(self.status_label.set_label, "Can't move %s charts" % self.icao[z])
 
                                 if self.view_notify is True:
 
-                                    os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+                                    Thread(target=os.system,args=("notify-send ChartsFinder Can't move %s charts" % self.icao[z],)).start()
 
                             break
 
@@ -234,18 +274,6 @@ class ChartsFinder:
 
                                 f.close()
 
-                            try:
-
-                                # If a folder was selected to save to it.
-
-                                self.destf = self.dest[8:]
-
-                            except:
-
-                                # If no folder has been selected
-
-                                self.destf = "folder"
-
                             # if no folder was selected, it will move to 'Charts' folder
 
                             if self.destf == 'folder':
@@ -254,25 +282,25 @@ class ChartsFinder:
 
                                     shutil.move("{0}.pdf".format(self.icao[z]), "Charts/")
 
-                                    GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+                                    GLib.idle_add(self.status_label.set_label, "%s charts downloaded" % self.icao[z])
 
                                     if self.view_notify is True:
 
-                                        os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
+                                        Thread(target=os.system, args=("notify-send ChartsFinder %s charts downloaded" % self.icao[z],)).start()
 
                                     # If user want to open chart
 
                                     if self.open_chart is True:
 
-                                        os.startfile("%s\\Charts\\%s.pdf" % (os.getcwd(),self.icao[z]))
+                                        Thread(target=os.startfile,args=("%s\\Charts\\%s.pdf" % (os.getcwd(),self.icao[z]),)).start()
 
                                 except:
 
-                                    GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+                                    GLib.idle_add(self.status_label.set_label,"Can't move %s charts" % self.icao[z])
 
                                     if self.view_notify is True:
 
-                                        os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+                                        Thread(target=os.system, args=("notify-send ChartsFinder Can't move %s charts" % self.icao[z],)).start()
 
                                 break
 
@@ -286,25 +314,23 @@ class ChartsFinder:
 
                                     shutil.move("{0}.pdf".format(self.icao[z]),self.destf)
 
-                                    GLib.idle_add(self.status_label.set_label, "%s Chart Downloaded" % self.icao[z])
+                                    GLib.idle_add(self.status_label.set_label, "%s charts downloaded" % self.icao[z])
 
                                     if self.view_notify is True:
 
-                                        os.system("notify-send ChartsFinder %s Chart Downloaded" % self.icao[z])
+                                        Thread(target=os.system, args=("notify-send ChartsFinder %s charts downloaded" % self.icao[z],)).start()
 
                                     if self.open_chart is True:
 
-                                        os.startfile(self.destf + "/{0}.pdf".format(self.icao[z]))
+                                        Thread(target=os.startfile,args=(self.destf + "/{0}.pdf".format(self.icao[z]),)).start()
 
                                 except:
 
-                                    # The error will occur only if chart is already exists
-
-                                    GLib.idle_add(self.status_label.set_label, "Chart Already Exists")
+                                    GLib.idle_add(self.status_label.set_label,"Can't move %s charts" % self.icao[z])
 
                                     if self.view_notify is True:
 
-                                        os.system("notify-send ChartsFinder %s Chart Already Exists" % self.icao[z])
+                                        Thread(target=os.system, args=("notify-send ChartsFinder Can't move %s charts" % self.icao[z],)).start()
 
                                 break
 
@@ -314,21 +340,11 @@ class ChartsFinder:
 
                         # Trying with another resource
 
-                        x = x + 1
+                        x += 1
 
-                        # If resources has over
+                time.sleep(5)
 
-                        if x > len(self.resources_list):
-
-                            GLib.idle_add(self.status_label.set_label,"%s Chart not found" % self.icao[z])
-
-                            if self.view_notify == True:
-
-                                os.system("notify-send ChartsFinder %s Chart not found" % self.icao[z])
-
-                            break
-
-            z = z + 1
+                z += 1
 
     # Add resource to TreeView
 
@@ -362,7 +378,9 @@ class ChartsFinder:
 
         # Start Thread
 
-        _thread.start_new_thread(self.get_chart, ())
+        t = Thread(target=self.get_chart, args=())
+
+        t.start()
 
     # Add new resource
 
@@ -442,8 +460,8 @@ class ChartsFinder:
 
     def rest_res(self, widget=None):
 
-        self.resources_list = [["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf","Normal"],
-                               ["http://vau.aero/navdb/chart/{0}.pdf","Normal"],["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/","Folder"],["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac,"Normal"],
+        self.resources_list = [["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf","Normal"],["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/","Folder"],
+                               ["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac, "Normal"],["http://vau.aero/navdb/chart/{0}.pdf","Normal"],
                                ["ottomanva.com/lib/charts/{0}.pdf","Normal"],["https://yinlei.org/x-plane10/jep/{0}.pdf","Normal"],["http://sa-ivao.net/charts_file/CHART-{0}.PDF","Normal"],
                                ["www.fly-sea.com/charts/{0}.pdf","Normal"],["www.uvairlines.com/admin/resources/charts/{0}.pdf","Normal"],["https://www.virtualairlines.eu/charts/{0}.pdf","Normal"]
                               ]
@@ -575,11 +593,13 @@ class ChartsFinder:
 
                 self.dest = ast.literal_eval(config.get("Settings","Path"))
 
+                self.destf = "folder"
+
             # else
 
             except:
 
-                self.dest = config.get("Settings", "Path")
+                self.destf = config.get("Settings", "Path")[8:]
 
             self.notify_check.set_active(ast.literal_eval(config.get("Settings","ViewNotify")))
 
