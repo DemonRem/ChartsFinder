@@ -117,6 +117,10 @@ class ChartsFinder:
 
                 GLib.idle_add(self.status_label.set_label,"Downloading %s Charts..." % self.icao[z])
 
+                if self.view_notify is True:
+
+                    Thread(target=os.system, args=("notify-send ChartsFinder Downloading %s charts..." % self.icao[z],)).start()
+
                 while True:
 
                     if self.destf == "folder":
@@ -679,7 +683,7 @@ class ChartsFinder:
 
         if self.des_folder.get_uri() != None:
 
-            self.dest = self.des_folder.get_uri()
+            self.destf = self.des_folder.get_uri()[8:]
 
     # Open settings window
 
