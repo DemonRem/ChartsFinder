@@ -57,7 +57,7 @@ buildOptions = dict(
 setup(
     name = "Charts Finder",
     author = "Abdullah Radwan",
-    version = "1.0.2",
+    version = "1.0.5a",
     description = "Get charts for your flight!",
     options = dict(build_exe = buildOptions),
     executables = executabless

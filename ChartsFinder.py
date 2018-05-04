@@ -3,7 +3,7 @@
 
 '''
 --------------------- Copyright Block ----------------------
-Charts Finder Program (Version 1.0.5)
+Charts Finder Program (Version 1.0.5a)
 Copyright (C) 2018 Abdullah Radwan
 License: GNU GPL v3.0
 TERMS OF USE:
@@ -51,7 +51,7 @@ class ChartsFinder:
                                ["http://www.fly-sea.com/charts/{0}.pdf","Normal"],["http://uvairlines.com/admin/resources/charts/{0}.pdf","Normal"],["https://www.virtualairlines.eu/charts/{0}.pdf","Normal"]
                               ]
 
-        self.dest = None
+        self.destf = None
 
         # Import main objects
 
@@ -123,7 +123,7 @@ class ChartsFinder:
 
                 while True:
 
-                    if self.destf == "folder":
+                    if self.destf is None:
 
                         path = os.getcwd() + "\\Charts\\" + self.icao[z]
 
@@ -595,7 +595,7 @@ class ChartsFinder:
 
             try:
 
-                self.dest = ast.literal_eval(config.get("Settings","Path"))
+                self.destf = ast.literal_eval(config.get("Settings","Path"))[1:]
 
                 self.destf = "folder"
 
@@ -603,7 +603,7 @@ class ChartsFinder:
 
             except:
 
-                self.destf = config.get("Settings", "Path")[8:]
+                self.destf = config.get("Settings", "Path")
 
             self.notify_check.set_active(ast.literal_eval(config.get("Settings","ViewNotify")))
 
@@ -661,7 +661,7 @@ class ChartsFinder:
 
         config.add_section('Settings')
 
-        config.set("Settings", "Path", self.dest)
+        config.set("Settings", "Path", self.destf)
 
         config.set("Settings", "ResourcesList", self.resources_list)
 
@@ -681,7 +681,7 @@ class ChartsFinder:
 
         # If something is selected
 
-        if self.des_folder.get_uri() != None:
+        if self.des_folder.get_uri() is not None:
 
             self.destf = self.des_folder.get_uri()[8:]
 
