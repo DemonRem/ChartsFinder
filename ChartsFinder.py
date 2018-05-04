@@ -3,7 +3,7 @@
 
 '''
 --------------------- Copyright Block ----------------------
-Charts Finder Program (Version 1.0.5a)
+Charts Finder Program (Version 1.0.5a53]3)
 Copyright (C) 2018 Abdullah Radwan
 License: GNU GPL v3.0
 TERMS OF USE:
