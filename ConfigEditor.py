@@ -29,45 +29,17 @@ class ConfigEditor:
             self.set_res()
 
             # Set folder to default folder
-            self.dest_folder = os.getcwd() + "\\Charts\\"
+            self.dest_folder = os.path.join(os.getcwd(), "Charts")
 
         else:
-            # Get config data:
+
+            # Get config data
 
             # Get destination folder
             self.dest_folder = config.get("Settings", "Path")
 
             # Get the resource list from config file
             self.resources_list = ast.literal_eval(config.get("Settings", "ResourcesList"))
-
-            # Update fltplan airac
-            try:
-
-                # Get where is it
-                g = 0
-
-                while g < len(self.resources_list):
-
-                    try:
-
-                        # Index resource
-                        a = self.resources_list[g].index(
-                            "http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac)
-
-                        b = g
-
-                        break
-
-                    except: g += 1
-
-                # Remove the old one
-                self.resources_list.pop[b](0)
-
-                # Add new Airac
-                self.resources_list[b].insert(a, "http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % self.airac)
-
-            # If fltplan not exists
-            except: pass
 
             # Set open chart
             self.open_chart_check.set_active(ast.literal_eval(config.get("Settings", "OpenPDF")))

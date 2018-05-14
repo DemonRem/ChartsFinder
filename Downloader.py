@@ -1,10 +1,11 @@
-import time
-import os
-import shutil
-import requests
 from bs4 import BeautifulSoup
 from gi.repository import GLib
 from threading import Thread
+import time
+import os
+import sys
+import requests
+import subprocess
 
 
 class Downloader:
@@ -52,8 +53,8 @@ class Downloader:
                 GLib.idle_add(self.status_label.set_label, "Downloading %s charts..." % icao_code)
 
                 if self.view_notify:
-                    Thread(target=os.system,
-                           args=("notify-send ChartsFinder Downloading %s charts..." % icao_code,)).start()
+                    Thread(target=subprocess.call,
+                           args=(["notify-send", "ChartsFinder", "Downloading %s charts..." % icao_code],)).start()
 
                 time.sleep(1)
 
@@ -66,8 +67,8 @@ class Downloader:
                         GLib.idle_add(self.status_label.set_label, "%s charts already exists" % icao_code)
 
                         if self.view_notify:
-                            Thread(target=os.system,
-                                   args=("notify-send ChartsFinder %s charts already exists" % icao_code,)).start()
+                            Thread(target=subprocess.call,
+                                   args=(["notify-send", "Charts Finder", "%s charts already exists" % icao_code],)).start()
 
                         break
 
@@ -83,8 +84,8 @@ class Downloader:
 
                         # Run notify
                         if self.view_notify:
-                            Thread(target=os.system,
-                                   args=("notify-send ChartsFinder %s charts not found" % icao_code,)).start()
+                            Thread(target=subprocess.call,
+                                   args=(["notify-send", "Charts Finder", "%s charts not found" % icao_code],)).start()
 
                         break
 
@@ -94,65 +95,85 @@ class Downloader:
                         # If resource is folder
                         if self.resources_list[x][1] == "Folder":
 
-                            # Create airport folder in destination folder
-                            path = self.dest_folder + icao_code
+                            # Set path
+                            path = os.path.join(self.dest_folder, icao_code)
 
-                            if not os.path.exists(path): os.mkdir(path)
-
-                            # Set HTML parser
-                            sopa = BeautifulSoup(response.content, "html.parser")
-
-                            # Download multiple charts
                             try:
 
-                                # Set URL
-                                url = self.resources_list[x][0].format(icao_code)
+                                # Create airport folder in path
+                                if not os.path.exists(path): os.mkdir(path)
 
-                                # Get each link
-                                for link in sopa.find_all('a'):
-
-                                    # If current link is url
-                                    current_link = link.get('href')
-
-                                    # Search for pdf files
-                                    if current_link.endswith('pdf'):
-
-                                        # Write each file and move it
-                                        with open(current_link, 'wb') as f:
-
-                                            f.write(requests.get(url.format(icao_code) + current_link).content)
-
-                                            f.close()
-
-                                            shutil.move(current_link, path)
-
-                                GLib.idle_add(self.status_label.set_label, "%s Charts Downloaded" % icao_code)
-
-                                if self.view_notify:
-                                    Thread(target=os.system,
-                                           args=("notify-send ChartsFinder %s charts downloaded" % icao_code,)).start()
-
-                                if self.open_chart: os.startfile(path)
-
-                            # If move fail
                             except:
 
-                                GLib.idle_add(self.status_label.set_label, "Can't move %s charts" % icao_code)
+                                # Can't create airport folder
+                                GLib.idle_add(self.status_label.set_label, "Can't create %s charts folder" % icao_code)
 
                                 if self.view_notify:
-                                    Thread(target=os.system,
-                                           args=("notify-send ChartsFinder Can't move %s charts" % icao_code,)).start()
+                                    Thread(target=subprocess.call,
+                                           args=(["notify-send", "Charts Finder", "Can't create %s charts folder" % icao_code],)).start()
 
-                            break
+                                break
+
+                            # Set HTML parser
+                            parser = BeautifulSoup(response.content, "html.parser")
+
+                            # Download multiple charts
+                            # Set URL
+                            url = self.resources_list[x][0].format(icao_code)
+
+                            # Get each link
+                            for link in parser.find_all('a'):
+
+                                # If current link is url
+                                current_link = link.get('href')
+
+                                # Search for pdf files
+                                if current_link.endswith('pdf'):
+
+                                    # Set file path
+                                    file_path = os.path.join(path, current_link)
+
+                                    # Write each file
+                                    with open(file_path, 'wb') as f:
+
+                                        f.write(requests.get(url.format(icao_code) + current_link).content)
+
+                                        f.close()
+
+                            GLib.idle_add(self.status_label.set_label, "%s charts Downloaded" % icao_code)
+
+                            if self.view_notify:
+                                    Thread(target=subprocess.call,
+                                           args=(["notify-send", "Charts Finder", "%s charts downloaded" % icao_code],)).start()
+
+                            if self.open_chart: self.open_file(path)
 
                         # If resource is normal
                         else:
 
-                            # This will work if 'Charts' folder not exists
-                            if not os.path.exists(self.dest_folder): os.mkdir(self.dest_folder)
+                            try:
+
+                                # Create chart folder
+                                if not os.path.exists(self.dest_folder): os.mkdir(self.dest_folder)
+
+                            except:
+
+                                # Can't create folder
+                                GLib.idle_add(self.status_label.set_label,
+                                                "Can't create %s charts folder" % icao_code)
+
+                                if self.view_notify:
+                                    Thread(target=subprocess.call,
+                                            args=(["notify-send", "Charts Finder",
+                                                    "Can't create %s charts folder" % icao_code],)).start()
+
+                                break
+
+                            # Set file path
+                            file_path = os.path.join(self.dest_folder, "{0}.pdf".format(icao_code))
 
                             # Write the chart to pdf file
-                            with open("{0}.pdf".format(icao_code), 'wb') as f:
+                            with open(file_path, 'wb') as f:
 
                                 f.write(response.content)
 
@@ -160,19 +181,14 @@ class Downloader:
 
                             try:
 
-                                # Trying to move chart
-                                shutil.move("{0}.pdf".format(icao_code), self.dest_folder)
-
                                 # Move success
                                 GLib.idle_add(self.status_label.set_label, "%s charts downloaded" % icao_code)
 
                                 if self.view_notify:
-                                    Thread(target=os.system, args=(
-                                        "notify-send ChartsFinder %s charts downloaded" % icao_code,)).start()
+                                    Thread(target=subprocess.call,
+                                           args=(["notify-send", "Charts Finder", "%s charts downloaded" % icao_code],)).start()
 
-                                if self.open_chart:
-                                    Thread(target=os.startfile,
-                                            args=(self.dest_folder + "{0}.pdf".format(icao_code),)).start()
+                                if self.open_chart: self.open_file(file_path)
 
                             except:
 
@@ -180,8 +196,8 @@ class Downloader:
                                 GLib.idle_add(self.status_label.set_label, "Can't move %s charts" % icao_code)
 
                                 if self.view_notify:
-                                    Thread(target=os.system, args=(
-                                        "notify-send ChartsFinder Can't move %s charts" % icao_code,)).start()
+                                    Thread(target=subprocess.call,
+                                           args=(["notify-send", "Charts Finder", "Can't move %s charts" % icao_code],)).start()
 
                             break
 
@@ -191,7 +207,7 @@ class Downloader:
                         # Trying with another resource
                         x += 1
 
-                time.sleep(3)
+                time.sleep(2)
 
                 z += 1
 
@@ -207,15 +223,28 @@ class Downloader:
         exist = False
 
         # Try for folder chart first
-        path = self.dest_folder + icao_code
+        path = os.path.join(self.dest_folder, icao_code)
 
         if os.path.exists(path): exist = True
 
         # Try for normal chart
         else:
 
-            path = self.dest_folder + icao_code + ".pdf"
+            path = os.path.join(self.dest_folder, icao_code + ".pdf")
 
             if os.path.exists(path): exist = True
 
         return exist
+
+    # Open file or path after download
+    def open_file(self, filename):
+
+        # If system is Windows, we will use os.startfile
+        if sys.platform == "win32": Thread(target=os.startfile, args=(filename,)).start()
+
+        # Else, use open for Mac or xdg-open for Linux
+        else:
+
+            opener = "open" if sys.platform == "darwin" else "xdg-open"
+
+            Thread(target=subprocess.call, args = ([opener, filename],)).start()

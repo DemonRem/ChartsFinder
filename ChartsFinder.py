@@ -1,7 +1,10 @@
+#!/usr/bin/python3
+# Start file on Linux and Mac
+
 # -*- coding: utf-8 -*-
 
 # --------------------- Copyright Block ----------------------
-# Charts Finder Program (Version 1.0.6)
+# Charts Finder Program (Version 1.0.6a)
 # Copyright (C) 2018 Abdullah Radwan
 # License: GNU GPL v3.0
 # TERMS OF USE:
@@ -15,14 +18,16 @@
 # ------------------------------------------------------------
 
 # Import Main libraries
+from threading import Thread
 import gi
 import time
+import sys
 import Downloader
 import ConfigEditor
 
+# Specific a GTK version and import it
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib
-from threading import Thread
 
 # Import Glade File
 builder = Gtk.Builder()
@@ -95,6 +100,7 @@ class ChartsFinder:
         x = 0
 
         while x < len(self.resources_list):
+
             self.res_liststore.append([x, self.resources_list[x][0]])
 
             x += 1
@@ -144,9 +150,7 @@ class ChartsFinder:
 
                 self.stat_label.set_label("A resource was moved up")
 
-        else:
-
-            self.stat_label.set_label("Please select a resource")
+        else: self.stat_label.set_label("Please select a resource")
 
     # Move a resource down
     def move_res_down(self, widget=None):
@@ -166,9 +170,7 @@ class ChartsFinder:
             res = self.resources_list[order]
 
             # If order is the last
-            if order + 1 == len(self.resources_list):
-
-                self.stat_label.set_label("You can't move the last item down")
+            if order + 1 == len(self.resources_list): self.stat_label.set_label("You can't move the last item down")
 
             else:
 
@@ -183,10 +185,7 @@ class ChartsFinder:
 
                 self.stat_label.set_label("A resource was moved down")
 
-
-        else:
-
-            self.stat_label.set_label("Please select a resource")
+        else: self.stat_label.set_label("Please select a resource")
 
     # Add new resource
     def add_res(self, widget=None):
@@ -194,17 +193,11 @@ class ChartsFinder:
         # Get resource
         res = self.res_entry.get_text()
 
-        try:
+        # Make order integer
+        try: order = int(self.order_entry.get_text())
 
-            # Make order integer
-            order = int(self.order_entry.get_text())
-
-        except:
-
-            # If order isn't integer
-            self.res_stat_label.set_label("Please enter a number in order filed")
-
-            return
+        # If order isn't integer
+        except: self.res_stat_label.set_label("Please enter a number in order filed"); return
 
         # Add resource to resources list
         if self.res_combo.get_active_text() == "Folder":
@@ -223,9 +216,7 @@ class ChartsFinder:
 
             self.stat_label.set_label("A normal resource was added")
 
-        else:
-
-            self.res_stat_label.set_label("Please choose a type")
+        else: self.res_stat_label.set_label("Please choose a type")
 
         self.res_win.hide()
 
@@ -248,11 +239,7 @@ class ChartsFinder:
 
             self.stat_label.set_label("A resource was removed")
 
-            print("Resource removed")
-
-        else:
-
-            self.stat_label.set_label("Please select a resource")
+        else: self.stat_label.set_label("Please select a resource")
 
     # Reset resources
     def rest_res(self, widget=None):
@@ -272,7 +259,7 @@ class ChartsFinder:
 
         self.set_res_view()
 
-        self.stat_label.set_label("Resources Rested")
+        self.stat_label.set_label("Resources was reset")
 
     # Set path, will activated when open choose file dialog
     def set_path(self, widget=None):
@@ -280,16 +267,22 @@ class ChartsFinder:
         # If something is selected
         if self.folder_chooser.get_uri() is not None:
 
-            self.dest_folder = self.folder_chooser.get_uri()[8:] + "/"
+            # If system is Windows, we will start from 8 to hide root slash
+            if sys.platform == "win32": start = 8
 
-            self.path_label.set_label("   Path: " + self.dest_folder)
+            # Else, start from 7 to show root slash
+            else: start = 7
+
+            self.dest_folder = self.folder_chooser.get_uri()[start:]
+
+            self.path_label.set_label("   Path: " + self.dest_folder + " ")
 
     # Open settings window
     def show_settings(self, widget=None):
 
         self.set_res_view()
 
-        self.path_label.set_label("   Path: " + self.dest_folder)
+        self.path_label.set_label("   Path: " + self.dest_folder + " ")
 
         self.settings_win.show_all()
 
