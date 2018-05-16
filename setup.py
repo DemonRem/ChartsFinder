@@ -27,7 +27,7 @@ gtk_libs = ['etc', 'lib', 'share']
 # Set project files
 project_files = ["ChartsFinder.glade", "ConfigEditor.py", "Downloader.py", "notify-send.exe"]
 
-# Create the list of includes as cx_freeze likes
+# Create the list of includes
 include_files = []
 
 # Add missing dll files
@@ -43,15 +43,17 @@ for file in project_files: include_files.append(file)
 executables = [Executable("ChartsFinder.py", base="Win32GUI")]
 
 buildOptions = dict(
-    includes = ["gi", "requests", 'idna', 'queue', 'os', 'configparser', 'ast', 'threading', 'subprocess', 'time', 'bs4'],
-    packages = ["gi", "requests", 'idna', 'queue', 'os', 'configparser', 'ast', 'threading', 'subprocess', 'time', 'bs4'],
+    includes = ["gi", "requests", 'idna', 'queue', 'os', 'configparser', 'ast', 'threading', 'subprocess', 'time', 'bs4',
+                'shutil', 'sys'],
+    packages = ["gi", "requests", 'idna', 'queue', 'os', 'configparser', 'ast', 'threading', 'subprocess', 'time', 'bs4',
+                'shutil', 'sys'],
     include_files = include_files
     )
 
 setup(
     name = "Charts Finder",
     author = "Abdullah Radwan",
-    version = "1.0.6",
+    version = "1.0.7",
     description = "Get charts for your flight!",
     options = dict(build_exe = buildOptions),
     executables = executables

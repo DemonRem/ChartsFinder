@@ -8,7 +8,7 @@
     <property name="icon_name">accessories-dictionary</property>
     <property name="type_hint">dialog</property>
     <property name="program_name">Charts Finder</property>
-    <property name="version">1.0.6a</property>
+    <property name="version">1.0.7</property>
     <property name="copyright" translatable="yes">Copyright (C) Abdullah Radwan</property>
     <property name="comments" translatable="yes">Get charts for your flight!</property>
     <property name="authors">Abdullah Radwan</property>
@@ -384,7 +384,7 @@
           </object>
           <packing>
             <property name="expand">False</property>
-            <property name="fill">True</property>
+            <property name="fill">False</property>
             <property name="position">5</property>
           </packing>
         </child>
@@ -395,6 +395,8 @@
     <columns>
       <!-- column-name order -->
       <column type="gint"/>
+      <!-- column-name type -->
+      <column type="gchararray"/>
       <!-- column-name res -->
       <column type="gchararray"/>
     </columns>
@@ -463,7 +465,7 @@
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">True</property>
+                <property name="fill">False</property>
                 <property name="position">0</property>
               </packing>
             </child>
@@ -479,7 +481,7 @@
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">True</property>
+                <property name="fill">False</property>
                 <property name="position">1</property>
               </packing>
             </child>
@@ -495,7 +497,7 @@
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">True</property>
+                <property name="fill">False</property>
                 <property name="position">2</property>
               </packing>
             </child>
@@ -550,12 +552,23 @@
                   </object>
                 </child>
                 <child>
-                  <object class="GtkTreeViewColumn" id="res_column">
-                    <property name="title" translatable="yes">Resource</property>
+                  <object class="GtkTreeViewColumn" id="type_column">
+                    <property name="title" translatable="yes">Type</property>
                     <child>
                       <object class="GtkCellRendererText" id="cellrenderertext2"/>
                       <attributes>
                         <attribute name="text">1</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="res_column">
+                    <property name="title" translatable="yes">Resource</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="cellrenderertext3"/>
+                      <attributes>
+                        <attribute name="text">2</attribute>
                       </attributes>
                     </child>
                   </object>
@@ -676,7 +689,7 @@
               </object>
               <packing>
                 <property name="expand">False</property>
-                <property name="fill">True</property>
+                <property name="fill">False</property>
                 <property name="position">6</property>
               </packing>
             </child>

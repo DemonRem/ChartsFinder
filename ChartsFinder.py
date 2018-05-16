@@ -4,7 +4,7 @@
 # -*- coding: utf-8 -*-
 
 # --------------------- Copyright Block ----------------------
-# Charts Finder Program (Version 1.0.6a)
+# Charts Finder Program (Version 1.0.7)
 # Copyright (C) 2018 Abdullah Radwan
 # License: GNU GPL v3.0
 # TERMS OF USE:
@@ -22,17 +22,19 @@ from threading import Thread
 import gi
 import time
 import sys
-import Downloader
+import os
 import ConfigEditor
+import Downloader
 
 # Specific a GTK version and import it
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, GLib
 
-# Import Glade File
+# Set builder
 builder = Gtk.Builder()
 
-builder.add_from_file("ChartsFinder.glade")
+# Join this file current directory and glade file
+builder.add_from_file(os.path.join(os.path.abspath(os.path.split(sys.argv[0])[0]), "ChartsFinder.glade"))
 
 
 class ChartsFinder:
@@ -78,7 +80,9 @@ class ChartsFinder:
         self.main_win = builder.get_object("main_win")
 
         # Set main objects
-        self.config = ConfigEditor.ConfigEditor(self.notify_check, self.open_chart_check)
+        self.system = sys.platform
+
+        self.config = ConfigEditor.ConfigEditor(self.system, self.notify_check, self.open_chart_check)
 
         # Read config data
         config = self.config.read_config()
@@ -97,13 +101,13 @@ class ChartsFinder:
         self.res_liststore.clear()
 
         # Start adding resources
-        x = 0
+        resource = 0
 
-        while x < len(self.resources_list):
+        while resource < len(self.resources_list):
 
-            self.res_liststore.append([x, self.resources_list[x][0]])
+            self.res_liststore.append([resource, self.resources_list[resource][1], self.resources_list[resource][0]])
 
-            x += 1
+            resource += 1
 
     # On button click
     def get_charts(self, widget=None):
@@ -111,9 +115,12 @@ class ChartsFinder:
         # Thread init
         GLib.threads_init()
 
+        self.downloader = Downloader.Downloader(self.system, self.resources_list, self.dest_folder, self.status_label,
+                                            self.get_button,self.icao_entry, self.notify_check.get_active(),
+                                            self.open_chart_check.get_active())
+
         # Start Thread
-        Thread(target=Downloader.Downloader(self.resources_list, self.dest_folder, self.status_label, self.get_button,
-                                            self.icao_entry, self.notify_check, self.open_chart_check).download).start()
+        Thread(target=self.downloader.download).start()
 
     # Move a resource up
     def move_res_up(self, widget=None):
@@ -133,9 +140,7 @@ class ChartsFinder:
             res = self.resources_list[order]
 
             # If order is the first (0)
-            if order is 0:
-
-                self.stat_label.set_label("You can't move the first item up")
+            if order is 0: self.stat_label.set_label("You can't move the first item up")
 
             else:
 
@@ -193,30 +198,26 @@ class ChartsFinder:
         # Get resource
         res = self.res_entry.get_text()
 
-        # Make order integer
-        try: order = int(self.order_entry.get_text())
+        string_order = self.order_entry.get_text()
 
-        # If order isn't integer
-        except: self.res_stat_label.set_label("Please enter a number in order filed"); return
+        res_type = self.res_combo.get_active_text()
 
-        # Add resource to resources list
-        if self.res_combo.get_active_text() == "Folder":
+        if not res == "" and not string_order == "" and res_type is not None:
 
-            self.resources_list.insert(order, [res, "Folder"])
+            # Make order integer
+            try: order = int(self.order_entry.get_text())
 
-            self.set_res_view()
+            # If order isn't integer
+            except: self.res_stat_label.set_label("Please enter a number in order filed"); return
 
-            self.stat_label.set_label("A folder resource was added")
+            # Add resource to resources list
+            self.resources_list.insert(order, [res, res_type])
 
-        elif self.res_combo.get_active_text() == "Normal":
+            self.stat_label.set_label("A resource was added")
 
-            self.resources_list.insert(order, [res, "Normal"])
+        else: self.res_stat_label.set_label("Please fill all fields"); return
 
-            self.set_res_view()
-
-            self.stat_label.set_label("A normal resource was added")
-
-        else: self.res_stat_label.set_label("Please choose a type")
+        self.set_res_view()
 
         self.res_win.hide()
 
@@ -268,7 +269,7 @@ class ChartsFinder:
         if self.folder_chooser.get_uri() is not None:
 
             # If system is Windows, we will start from 8 to hide root slash
-            if sys.platform == "win32": start = 8
+            if self.system == "win32": start = 8
 
             # Else, start from 7 to show root slash
             else: start = 7
@@ -282,9 +283,10 @@ class ChartsFinder:
 
         self.set_res_view()
 
-        self.path_label.set_label("   Path: " + self.dest_folder + " ")
-
         self.settings_win.show_all()
+
+        # Set path label to current path
+        self.path_label.set_label("   Path: " + self.dest_folder + " ")
 
     # Show add resource dialog
     def show_res_win(self, widget=None):
@@ -311,6 +313,10 @@ class ChartsFinder:
 
     # End the program
     def quit(self, widget=None):
+
+        try: self.downloader.cancel = True
+
+        except: pass
 
         self.config.write_config(self.dest_folder, self.resources_list)
 
