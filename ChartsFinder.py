@@ -1,330 +1,253 @@
-#!/usr/bin/python3
-# Start file on Linux and Mac
-
-# -*- coding: utf-8 -*-
-
-# --------------------- Copyright Block ----------------------
-# Charts Finder Program (Version 1.0.7)
-# Copyright (C) 2018 Abdullah Radwan
-# License: GNU GPL v3.0
-# TERMS OF USE:
-#	Permission is granted to use this code, with or
-#	without modification, in any website or application
-#	provided that credit is given to the original work
-#	with a link back to Abdullah Radwan.
-# This program is distributed in the hope that it will
-# be useful, but WITHOUT ANY WARRANTY.
-# PLEASE DO NOT REMOVE THIS COPYRIGHT BLOCK
-# ------------------------------------------------------------
-
-# Import Main libraries
-from threading import Thread
-import gi
-import time
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt, QThread
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QAction, QLineEdit,
+                             QPushButton, QMessageBox, QSystemTrayIcon, QProgressDialog)
 import sys
 import os
+import SettingsWindow
 import ConfigEditor
 import Downloader
 
-# Specific a GTK version and import it
-gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, GLib
+about = '''
+Charts Finder <br>
+Get charts for your flight! <br> <br>
 
-# Set builder
-builder = Gtk.Builder()
+Version: 1.1 <br>
+Build date: May 2018 <br>
+Check for updates here: <a href='https://bit.ly/2GA0vdo'>https://bit.ly/2GA0vdo</a> <br> <br>
 
-# Join this file current directory and glade file
-builder.add_from_file(os.path.join(os.path.abspath(os.path.split(sys.argv[0])[0]), "ChartsFinder.glade"))
+Copyright © Abdullah Radwan <br>
+Contact: <a href='mailto:abbodmar@gmail.com?subject=Charts%20Finder'>abbodmar@gmail.com</a>
+'''
 
 
-class ChartsFinder:
+class ChartsFinder(QMainWindow):
 
-    # Initialization
     def __init__(self):
 
-        # Import main objects
-        self.settings_win = builder.get_object("settings_win")
+        # Call super init
+        super().__init__()
 
-        self.icao_entry = builder.get_object("icao_code")
+        # Set icon path by getting current path with icon.svg
+        icon = QIcon(os.path.join(os.path.abspath(os.path.split(sys.argv[0])[0]), "icon.svg"))
 
-        self.about_dialog = builder.get_object("about_dialog")
-
-        self.status_label = builder.get_object("status_label")
-
-        self.stat_label = builder.get_object("stat_label")
-
-        self.folder_chooser = builder.get_object("dest_folder")
-
-        self.open_chart_check = builder.get_object("open_chart_check")
-
-        self.notify_check = builder.get_object("view_notify_check")
-
-        self.res_liststore = builder.get_object("res_list")
-
-        self.res_treeview = builder.get_object("res_treeview")
-
-        self.res_win = builder.get_object("add_res_win")
-
-        self.res_entry = builder.get_object("res_entry")
-
-        self.order_entry = builder.get_object("order_entry")
-
-        self.res_combo = builder.get_object("res_combo")
-
-        self.res_stat_label = builder.get_object("add_res_stat_label")
-
-        self.get_button = builder.get_object("get_chart")
-
-        self.path_label = builder.get_object("path_label")
-
-        self.main_win = builder.get_object("main_win")
-
-        # Set main objects
         self.system = sys.platform
 
-        self.config = ConfigEditor.ConfigEditor(self.system, self.notify_check, self.open_chart_check)
+        # Set system tray, used to show notifications
+        self.system_tray = QSystemTrayIcon(icon)
 
-        # Read config data
-        config = self.config.read_config()
+        self.system_tray.show()
 
-        # Set data from return values
-        self.dest_folder = config[0]
+        # Set window title
+        self.setWindowTitle("Charts Finder")
 
-        self.resources_list = config[1]
+        # Set window flags to disable minimaize button
+        self.setWindowFlags(Qt.WindowCloseButtonHint | Qt.WindowMinimizeButtonHint)
 
-        # Show main windows
-        self.main_win.show_all()
+        # Set window icon
+        self.setWindowIcon(QIcon(icon))
 
-    def set_res_view(self):
+        # Make instance of settings window
+        self.settings = SettingsWindow.SettingsWindow(self.system, icon)
 
-        # Clear liststore
-        self.res_liststore.clear()
+        # Call set menu
+        self.set_menu()
 
-        # Start adding resources
-        resource = 0
+        # Set main layout
+        main_layout = QVBoxLayout(self)
 
-        while resource < len(self.resources_list):
+        # Set application name label
+        app_label = QLabel("Charts Finder", self)
 
-            self.res_liststore.append([resource, self.resources_list[resource][1], self.resources_list[resource][0]])
+        # Set alignment to center and top
+        app_label.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
-            resource += 1
+        # Add it to main layout
+        main_layout.addWidget(app_label)
 
-    # On button click
-    def get_charts(self, widget=None):
+        # Set ICAO label and line edit box
+        enter_layout = QHBoxLayout(self)
 
-        # Thread init
-        GLib.threads_init()
+        # Set ICAO label
+        enter_label = QLabel("Enter ICAO codes:", self)
 
-        self.downloader = Downloader.Downloader(self.system, self.resources_list, self.dest_folder, self.status_label,
-                                            self.get_button,self.icao_entry, self.notify_check.get_active(),
-                                            self.open_chart_check.get_active())
+        # Add it to enter layout
+        enter_layout.addWidget(enter_label)
 
-        # Start Thread
-        Thread(target=self.downloader.download).start()
+        # Set ICAO line edit
+        self.icao_edit = QLineEdit(self)
 
-    # Move a resource up
-    def move_res_up(self, widget=None):
+        # Set hint
+        self.icao_edit.setPlaceholderText("Separate with space")
 
-        # Get selection class
-        res_select = self.res_treeview.get_selection()
+        # If 'Enter' key pressed, connect to get charts
+        self.icao_edit.returnPressed.connect(self.get_charts)
 
-        # Get selected value from selection class
-        model, treeiter = res_select.get_selected()
+        # Add it to enter layout
+        enter_layout.addWidget(self.icao_edit)
 
-        if treeiter is not None:
+        # Add enter layout to main_layout
+        main_layout.addLayout(enter_layout)
 
-            # Get order
-            order = model[treeiter][0]
+        # Set get charts button
+        self.get_button = QPushButton("Get charts", self)
 
-            # Get specific res list in resource list
-            res = self.resources_list[order]
+        # Connect on click to get charts
+        self.get_button.clicked.connect(self.get_charts)
 
-            # If order is the first (0)
-            if order is 0: self.stat_label.set_label("You can't move the first item up")
+        # Add it to main layout
+        main_layout.addWidget(self.get_button)
 
-            else:
+        # Set status bar
+        self.status_bar = self.statusBar()
 
-                # Remove the resource
-                self.resources_list.pop(order)
+        # Add it to main layout
+        main_layout.addWidget(self.status_bar)
 
-                # Insert new one with higher order
-                self.resources_list.insert(order - 1, res)
+        # Set main widget
+        widget = QWidget(self)
 
-                # Update view
-                self.set_res_view()
+        # Set widget layout
+        widget.setLayout(main_layout)
 
-                self.stat_label.set_label("A resource was moved up")
+        # Set view to main widget
+        self.setCentralWidget(widget)
 
-        else: self.stat_label.set_label("Please select a resource")
+        # Set progress dialog
+        self.progress_dialog = QProgressDialog(self)
 
-    # Move a resource down
-    def move_res_down(self, widget=None):
+        # Connect cancel event to cancel method
+        self.progress_dialog.canceled.connect(self.cancel_download)
 
-        # Get selection class
-        res_select = self.res_treeview.get_selection()
+        # Reset it to hide it (.hide() doesn't work)
+        self.progress_dialog.reset()
 
-        # Get selected value from selection class
-        model, treeiter = res_select.get_selected()
+    # If user closes the window
+    def closeEvent(self, *args, **kwargs):
 
-        if treeiter is not None:
+        # Call cancel download if there is any download
+        self.cancel_download()
 
-            # Get order
-            order = model[treeiter][0]
+        # Call write config
+        ConfigEditor.ConfigEditor(self.system).write_config(self.settings.dest_folder, self.settings.resources_list,
+                                                            self.settings.open_file, self.settings.view_notify)
 
-            # Get specific res list in resource list
-            res = self.resources_list[order]
+        # Hide system tray icon
+        self.system_tray.hide()
 
-            # If order is the last
-            if order + 1 == len(self.resources_list): self.stat_label.set_label("You can't move the last item down")
+    # Set menu bar
+    def set_menu(self):
 
-            else:
+        # Get window menu bar
+        menu = self.menuBar()
 
-                # Remove the resource
-                self.resources_list.pop(order)
+        # Set settings action
+        settings_action = QAction("Settings", self)
 
-                # Insert new one with lower order
-                self.resources_list.insert(order + 1, res)
+        # On click, with execute the settings window (run it in main thread)
+        settings_action.triggered.connect(self.settings.exec)
 
-                # Update view
-                self.set_res_view()
+        # Add action to menu bar
+        menu.addAction(settings_action)
 
-                self.stat_label.set_label("A resource was moved down")
+        # Set about action
+        about_action = QAction("About", self)
 
-        else: self.stat_label.set_label("Please select a resource")
+        # On click, call show about method
+        about_action.triggered.connect(self.show_about)
 
-    # Add new resource
-    def add_res(self, widget=None):
+        # Add action to menu bar
+        menu.addAction(about_action)
 
-        # Get resource
-        res = self.res_entry.get_text()
+    # Get charts
+    def get_charts(self):
 
-        string_order = self.order_entry.get_text()
+        # Make instance of downloader
+        self.downloader = Downloader.Downloader(self.system, self.settings.resources_list,
+                                                self.settings.dest_folder,  self.progress_dialog, self.status_bar,
+                                                self.icao_edit.text().upper().split(), self.settings.view_notify,
+                                                self.settings.open_file, self.system_tray)
 
-        res_type = self.res_combo.get_active_text()
+        # Set downloader thread
+        self.downloader_thread = QThread(self)
 
-        if not res == "" and not string_order == "" and res_type is not None:
+        # On thread start will execute download method
+        self.downloader_thread.started.connect(self.downloader.download)
 
-            # Make order integer
-            try: order = int(self.order_entry.get_text())
+        # Move downloader to thread
+        self.downloader.moveToThread(self.downloader_thread)
 
-            # If order isn't integer
-            except: self.res_stat_label.set_label("Please enter a number in order filed"); return
+        # Connect PyQt5 slot and signals
+        self.downloader.start_download_process.connect(self.start_download_process)
 
-            # Add resource to resources list
-            self.resources_list.insert(order, [res, res_type])
+        self.downloader.show_dialog.connect(self.show_dialog)
 
-            self.stat_label.set_label("A resource was added")
+        self.downloader.set_progress.connect(self.set_progress)
 
-        else: self.res_stat_label.set_label("Please fill all fields"); return
+        self.downloader.reset_dialog.connect(self.progress_dialog.reset)
 
-        self.set_res_view()
+        self.downloader.finish_download_process.connect(self.finish_download_process)
 
-        self.res_win.hide()
+        # Start thread
+        self.downloader_thread.start()
 
-    # Remove a resource
-    def rem_res(self, widget=None):
+    # Set progress, called from downloader thread
+    def set_progress(self, progress): self.progress_dialog.setValue(progress)
 
-        # Get selection class
-        res_select = self.res_treeview.get_selection()
+    # Start the whole download process
+    def start_download_process(self):
 
-        # Get selected value from selection class
-        model, treeiter = res_select.get_selected()
+        # Disable the line edit and 'Get charts' button
+        self.icao_edit.setEnabled(False)
 
-        if treeiter is not None:
+        self.get_button.setEnabled(False)
 
-            # Remove from resource list
-            self.resources_list.pop(model[treeiter][0])
+    # Show the progress dialog
+    def show_dialog(self): self.progress_dialog.setVisible(True)
 
-            # Set resource view
-            self.set_res_view()
+    # Finish the whole download process
+    def finish_download_process(self):
 
-            self.stat_label.set_label("A resource was removed")
+        # Reset progress dialog
+        self.progress_dialog.reset()
 
-        else: self.stat_label.set_label("Please select a resource")
+        # Enable line edit and 'Get charts' button
+        self.icao_edit.setEnabled(True)
 
-    # Reset resources
-    def rest_res(self, widget=None):
+        self.get_button.setEnabled(True)
 
-        self.resources_list = [["http://www.armats.com/arm/aviation/products/eAIP/pdf/UD-AD-2.{0}-en-GB.pdf", "Normal"],
-                               ["http://www.sia-enna.dz/PDF/AIP/AD/AD2/{0}/", "Folder"],
-                               ["http://imageserver.fltplan.com/merge/merge%s/{0}.pdf" % time.strftime("%y%m",time.gmtime()),"Normal"],
-                               ["http://vau.aero/navdb/chart/{0}.pdf", "Normal"],
-                               ["http://ottomanva.com/lib/charts/{0}.pdf", "Normal"],
-                               ["https://yinlei.org/x-plane10/jep/{0}.pdf", "Normal"],
-                               ["http://sa-ivao.net/charts_file/{0}.pdf", "Normal"],
-                               ["http://www.fly-sea.com/charts/{0}.pdf", "Normal"],
-                               ["http://www.europlanet.de/vaFsP/charts/{0}.pdf", "Normal"],
-                               ["http://uvairlines.com/admin/resources/charts/{0}.pdf", "Normal"],
-                               ["https://www.virtualairlines.eu/charts/{0}.pdf", "Normal"]
-                               ]
+    # Cancel download
+    def cancel_download(self):
 
-        self.set_res_view()
+        # Try and except because it used by close event
+        try:
 
-        self.stat_label.set_label("Resources was reset")
+            # Reset progress dialog
+            self.progress_dialog.reset()
 
-    # Set path, will activated when open choose file dialog
-    def set_path(self, widget=None):
-
-        # If something is selected
-        if self.folder_chooser.get_uri() is not None:
-
-            # If system is Windows, we will start from 8 to hide root slash
-            if self.system == "win32": start = 8
-
-            # Else, start from 7 to show root slash
-            else: start = 7
-
-            self.dest_folder = self.folder_chooser.get_uri()[start:]
-
-            self.path_label.set_label("   Path: " + self.dest_folder + " ")
-
-    # Open settings window
-    def show_settings(self, widget=None):
-
-        self.set_res_view()
-
-        self.settings_win.show_all()
-
-        # Set path label to current path
-        self.path_label.set_label("   Path: " + self.dest_folder + " ")
-
-    # Show add resource dialog
-    def show_res_win(self, widget=None):
-
-        self.res_win.run()
-
-        self.res_win.hide_on_delete()
-        # If no hide_on_delete, the windows can't shown again
-
-    # Set about dialog
-    def show_about_dialog(self, widget=None):
-
-        self.about_dialog.run()
-
-        self.about_dialog.hide_on_delete()
-
-    # Hide settings window
-    def hide_settings(self, widget=None, data=None):
-
-        self.settings_win.hide_on_delete()
-
-        return True
-        # the windows can't shown again if there's no return True
-
-    # End the program
-    def quit(self, widget=None):
-
-        try: self.downloader.cancel = True
+            # Cancel downloader
+            self.downloader.cancel = True
 
         except: pass
 
-        self.config.write_config(self.dest_folder, self.resources_list)
+    # Show about dialog
+    def show_about(self): QMessageBox().about(self, "About Charts Finder", about)
 
-        Gtk.main_quit()
 
+# To make errors appear in IDEA
+def except_hook(cls, exception, traceback): sys.__excepthook__(cls, exception, traceback)
 
-# Connect class to builder
-builder.connect_signals(ChartsFinder())
+# Connect error to error function
+sys.excepthook = except_hook
 
-# Start the program
-Gtk.main()
+# Set application
+app = QApplication(sys.argv)
+
+# Make instance
+charts_finder = ChartsFinder()
+
+# Show window
+charts_finder.show()
+
+# Execute application
+sys.exit(app.exec())
